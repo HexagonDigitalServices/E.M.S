@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* Hide blinking text cursor (caret) on non-editable elements */
+* {
+  caret-color: transparent !important;
+}
+
+/* Allow blinking caret in active text input fields and textareas when actively typing */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+input:not([type]):focus,
+textarea:focus {
+  caret-color: auto !important;
+}
