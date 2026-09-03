@@ -1,6 +1,4 @@
 
-export const createEmployee = async (req,res)=>{
-    try{
         if (!req.file) {
             return res.status(400).json({ success: false, message: "Profile image is required." });
         }
@@ -89,12 +87,7 @@ export const createEmployee = async (req,res)=>{
         }
 
         return res.status(201).json({success:true,message:"Employee created successfully",employee});
-    }
-    catch(error) {
-        console.error("Error in createEmployee:", error);
-        return res.status(500).json({success:false,message:error.message})
-    }
-}
+   
 
 
 export const updateEmployee = async (req,res)=>{
