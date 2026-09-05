@@ -17,3 +17,22 @@
   "accountStatus": "Active",
   "profileImage": "avatar.png"
 }
+
+
+// for payroll
+{
+  "employeeId": "",
+  "empId": "EMP-101",
+  "name": "John Doe",
+  "role": "Software Developer",
+  "department": "Engineering",
+  "payDate": "2026-08-31",
+  "salaryPeriod": "2026-08",
+  "month": "August",
+  "baseSalary": 75000,
+  "bonus": 5000,
+  "overtime": 2000,
+  "deduction": 1500,
+  "netSalary": 80500,
+  "status": "Paid"
+}
