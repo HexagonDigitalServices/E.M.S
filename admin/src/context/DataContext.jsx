@@ -1,10 +1,5 @@
 
-      try {
-        const res = await fetch(`${BASE}/api/employee`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
+
           const mapped = data.employee.map((emp) => ({
             ...emp,
             id: emp.employeeId,
@@ -16,10 +11,7 @@
               : "",
             joiningDate: emp.joiningDate ? emp.joiningDate.split("T")[0] : "",
           }));
-          setEmployees(mapped);
-          setEmployeesFetched(true);
-        }
-      } 
+  
 
   
   // Announcements
