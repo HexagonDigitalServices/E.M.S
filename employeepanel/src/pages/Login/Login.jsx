@@ -1,0 +1,71 @@
+      if (!response.ok) {
+        if (data.isVerified === false) {
+          setError(data.message);
+          setTimeout(() => {
+            navigate(
+              `/verify-otp?email=${encodeURIComponent(data.email || cleanEmail)}`,
+            );
+          }, 1500);
+          return;
+        }
+
+        setError(data.message || "Invalid credentials");
+        setLoading(false);
+        return;
+      }
+
+      saveEmployeeLogin({
+        email: cleanEmail,
+        name: data.name || cleanEmail.split("@")[0],
+        role: data.role,
+        token: data.token,
+        employeeId: data.employeeId || "",
+      });
+
+      navigate(location.state?.from?.pathname || "/", { replace: true });
+    
+      catch (err) {
+      console.error("Login error:", err);
+      setError(
+        "Unable to connect to the server. Please check your connection.",
+      );
+      setLoading(false);
+    }
+
+
+
+          <button
+            disabled={loading}
+            className={s.submitButton}
+          >
+            {loading ? (
+              <>
+                <svg
+                  className={s.spinner}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className={s.spinnerCircle}
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className={s.spinnerPath}
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Logging in...
+              </>
+            ) : (
+              <>
+                Login
+                <ArrowRight size={17} />
+              </>
+            )}
+          </button>
+       
