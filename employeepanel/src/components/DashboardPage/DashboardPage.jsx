@@ -39,16 +39,6 @@ const getFormattedDisplayDateOnly = (dateValue) => {
 };
 
 
-
-  const [announcements, setAnnouncements] = useState([]);
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
-
-  const leave = records.filter((record) => record.type == "Leave");
-  const present = records.filter((record) => record.type == "Present").length;
-  const approvedDays = leave
-    .filter((record) => record.status == "Approved")
-    .flatMap((record) => dates(record.from, record.to)).length;
-
   const absentDaysCount = (() => {
     if (!joiningDate) return 0;
     const startStr = joiningDate.split("T")[0];
