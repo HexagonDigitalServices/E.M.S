@@ -1,18 +1,3 @@
-       setError(data.message || "Invalid credentials");
-        setLoading(false);
-        return;
-      }
-
-      saveEmployeeLogin({
-        email: cleanEmail,
-        name: data.name || cleanEmail.split("@")[0],
-        role: data.role,
-        token: data.token,
-        employeeId: data.employeeId || "",
-      });
-
-      navigate(location.state?.from?.pathname || "/", { replace: true });
-    
       catch (err) {
       console.error("Login error:", err);
       setError(
