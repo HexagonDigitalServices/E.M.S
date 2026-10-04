@@ -1,27 +1,3 @@
-const Stat = ({ icon: Icon, title, value, note }) => (
-  <div className={s.statCard}>
-    <div className={s.statCardDeco} />
-    <div className={s.statCardContent}>
-      <span className={s.statIconWrapper}>
-        <Icon size={21} />
-      </span>
-      <p className={s.statTitle}>{title}</p>
-      <div className={s.statValueRow}>
-        <b className={s.statValue}>{value}</b>
-        <small className={s.statNote}>{note}</small>
-      </div>
-    </div>
-  </div>
-);
-
-export const Toast = ({ text }) =>
-  text && (
-    <div className={s.toastContainer}>
-      <Sparkles className={s.toastIcon} size={16} />
-      {text}
-    </div>
-  );
-
 const getAnnouncementDisplayDate = (createdAt) => {
   if (!createdAt) return "";
   const date = new Date(createdAt);
