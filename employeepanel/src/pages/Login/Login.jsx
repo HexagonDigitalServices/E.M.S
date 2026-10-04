@@ -1,15 +1,4 @@
-      if (!response.ok) {
-        if (data.isVerified === false) {
-          setError(data.message);
-          setTimeout(() => {
-            navigate(
-              `/verify-otp?email=${encodeURIComponent(data.email || cleanEmail)}`,
-            );
-          }, 1500);
-          return;
-        }
-
-        setError(data.message || "Invalid credentials");
+       setError(data.message || "Invalid credentials");
         setLoading(false);
         return;
       }
