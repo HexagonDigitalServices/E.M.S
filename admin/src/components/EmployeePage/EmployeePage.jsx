@@ -34,7 +34,7 @@ const summaryItems = [
   { label: "Departments", key: "departments", icon: Building2 },
   { label: "Active Accounts", key: "active", icon: ShieldCheck },
 ];
-
+// Renders the employee directory and manages loading, searching, filtering, create/edit/delete actions, and toast messages; outputs the page JSX.
 const EmployeePage = () => {
   const { user } = useAuth();
   const { employees, setEmployees, fetchEmployees } = useData();
@@ -58,14 +58,25 @@ const EmployeePage = () => {
   const toastExitTimer = useRef(null);
   const todayDate = getTodayDate();
 
+  // Builds an array containing "All" and each unique employee department; outputs the department filter options.
   const departments = useMemo(
-    () => ["All", ...new Set(employees.map((employee) => employee.department))],
+    // Returns "All" plus the unique department names; outputs the array used by the department filter.
+    () => [
+      "All",
+      ...new Set(
+        employees.map(
+          // Converts one employee object into its department name; outputs a string.
+          (employee) => employee.department,
+        ),
+      ),
+    ],
     [employees],
   );
 
+  // Filters employees by department and case-insensitive search across employee fields; outputs the matching employee array.
   const filteredEmployees = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-
+    // Checks each employee’s department and searchable details; returns true only when both filters match.
     return employees.filter((employee) => {
       const matchesDepartment =
         department === "All" || employee.department === department;
@@ -93,6 +104,7 @@ const EmployeePage = () => {
     });
   }, [department, employees, searchTerm]);
 
+  // Calculates employee totals, unique department count, formatted monthly salary, and active-account count; outputs a summary object.
   const summary = useMemo(
     () => ({
       total: filteredEmployees.length,
@@ -112,13 +124,15 @@ const EmployeePage = () => {
     }),
     [filteredEmployees],
   );
-
+  // Calculates the next employee ID from the current employee list; outputs the next ID string.
   const nextEmployeeId = useMemo(
     () => getNextEmployeeId(employees),
     [employees],
   );
 
+  // Clears pending toast timers when the component unmounts; the effect returns a cleanup function.
   useEffect(() => {
+    // Cancels all toast-related timeouts during cleanup; outputs no value.
     return () => {
       window.clearTimeout(toastTimer.current);
       window.clearTimeout(toastFrame.current);
@@ -126,6 +140,7 @@ const EmployeePage = () => {
     };
   }, []);
 
+  // Loads employees on mount, refreshes every eight seconds and on window focus, then cleans up the interval and listener.
   useEffect(() => {
     fetchEmployees();
 
@@ -144,18 +159,20 @@ const EmployeePage = () => {
     };
   }, [fetchEmployees]);
 
+  // Cancels all active toast timeouts; outputs no value and prevents stale toast callbacks from running.
   const clearToastTimers = () => {
     window.clearTimeout(toastTimer.current);
     window.clearTimeout(toastFrame.current);
     window.clearTimeout(toastExitTimer.current);
   };
-
+  // Closes the toast and schedules its removal after 220 ms; updates toast state and outputs no value.
   const closeToast = () => {
     clearToastTimers();
     setToastOpen(false);
+    // Clears the toast data after the exit animation delay; the callback sets toast state to null.
     toastExitTimer.current = window.setTimeout(() => setToast(null), 220);
   };
-
+  // Displays a toast with a title, message, tone, and optional delete confirmation; updates toast animation/timer state and returns nothing.
   const showToast = ({
     title,
     message,
@@ -180,6 +197,7 @@ const EmployeePage = () => {
     }
   };
 
+  // Resets the form for a new employee, assigns the next ID and today’s joining date, and opens the add modal; outputs no value.
   const openAddModal = () => {
     setFormMode("add");
     setEditingEmployeeId(null);
@@ -195,6 +213,7 @@ const EmployeePage = () => {
     setIsFormOpen(true);
   };
 
+  // Loads an employee’s current details into the form and opens edit mode; updates form state and outputs no value.
   const openEditModal = (employee) => {
     setFormMode("edit");
     setEditingEmployeeId(employee.id);
@@ -213,14 +232,14 @@ const EmployeePage = () => {
     setFormErrors({});
     setIsFormOpen(true);
   };
-
+  // Closes the employee form and clears validation, selected-file, and edit-ID state; outputs no value.
   const closeFormModal = () => {
     setIsFormOpen(false);
     setFormErrors({});
     setSelectedFile(null);
     setEditingEmployeeDbId(null);
   };
-
+  // Normalizes the selected field, prevents past joining dates when adding, and clears that field’s error; updates form state and returns nothing.
   const updateFormField = (field, value) => {
     let nextValue = value;
 
@@ -240,7 +259,7 @@ const EmployeePage = () => {
     setFormData((currentForm) => ({ ...currentForm, [field]: nextValue }));
     setFormErrors((currentErrors) => ({ ...currentErrors, [field]: "" }));
   };
-
+  // Validates the chosen profile image, stores the file and preview data URL, or shows an error toast; outputs no value.
   const handleImageChange = (event) => {
     const file = event.target.files?.[0];
 
@@ -267,6 +286,7 @@ const EmployeePage = () => {
     event.target.value = "";
   };
 
+  // Validates and submits employee data to create/update the record, updates local state and shows the result toast; resolves without a useful return value.
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -391,7 +411,7 @@ const EmployeePage = () => {
       setSaving(false);
     }
   };
-
+  // Opens a delete-confirmation toast for the chosen employee; stores the employee to delete and outputs no value.
   const requestDelete = (employee) => {
     setSelectedEmployee(null);
     showToast({
@@ -401,7 +421,7 @@ const EmployeePage = () => {
       confirmEmployee: employee,
     });
   };
-
+  // Sends the delete request, removes the employee locally on success, and shows a result toast; resolves without a useful return value.
   const confirmDelete = async () => {
     if (!toast?.confirmEmployee) return;
 
@@ -446,6 +466,7 @@ const EmployeePage = () => {
     }
   };
 
+  // REST ARE THE UI PART THAT IS CREATED USING SMALL COMPONENTS
   return (
     <main className={s.main}>
       <EmployeeToast
@@ -490,11 +511,7 @@ const EmployeePage = () => {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={openAddModal}
-            className={s.addButton}
-          >
+          <button type="button" onClick={openAddModal} className={s.addButton}>
             <UserPlus className={s.addIcon} />
             Add Employee
           </button>

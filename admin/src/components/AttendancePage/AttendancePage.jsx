@@ -22,16 +22,20 @@ import {
 } from "./attendanceUtils";
 import { attendancePageStyles as s } from "../../assets/dummyStyles";
 
+// Returns an array containing "All" plus the unique, non-empty values for the given key in alphabetical order.
 const getUniqueSortedValues = (items, key) => [
   "All",
   ...new Set(
     items
+      // Extracts the selected property from each item; outputs an array of property values.
       .map((item) => item[key])
       .filter(Boolean)
+      // Compares two values alphabetically; outputs a negative, zero, or positive sort result.
       .sort((first, second) => first.localeCompare(second)),
   ),
 ];
 
+// Builds attendance table rows with attendance/leave details, then returns only rows matching the selected filters and search text.
 const buildAttendanceRows = ({
   attendanceDate,
   departmentFilter,
@@ -43,59 +47,77 @@ const buildAttendanceRows = ({
 }) => {
   const query = searchTerm.trim().toLowerCase();
 
-  return employees
-    .map((employee) => {
-      const attendance = getAttendanceForDate(employee, attendanceDate);
-      const pendingLeave = getLeaveRequestForDate(employee, attendanceDate, [
-        "Applied",
-      ]);
-      const rowStatus = getEffectiveStatus(employee, attendanceDate, todayDate);
-      const latestLeave = getLeaveRequestForDate(employee, attendanceDate);
+  return (
+    employees
+      // Converts each employee into a row object containing their attendance, leave information, status, and searchable text.
+      .map((employee) => {
+        const attendance = getAttendanceForDate(employee, attendanceDate);
+        const pendingLeave = getLeaveRequestForDate(employee, attendanceDate, [
+          "Applied",
+        ]);
+        const rowStatus = getEffectiveStatus(
+          employee,
+          attendanceDate,
+          todayDate,
+        );
+        const latestLeave = getLeaveRequestForDate(employee, attendanceDate);
 
-      const searchText = [
-        employee.id,
-        employee.name,
-        employee.department,
-        employee.designation,
-        employee.email,
-        employee.phone,
-        rowStatus,
-        latestLeave?.reason,
-      ]
-        .join(" ")
-        .toLowerCase();
+        const searchText = [
+          employee.id,
+          employee.name,
+          employee.department,
+          employee.designation,
+          employee.email,
+          employee.phone,
+          rowStatus,
+          latestLeave?.reason,
+        ]
+          .join(" ")
+          .toLowerCase();
 
-      return {
-        employee,
-        attendance,
-        latestLeave,
-        pendingLeave,
-        rowStatus,
-        searchText,
-      };
-    })
-    .filter((row) => statusFilter === "All" || row.rowStatus === statusFilter)
-    .filter(
-      (row) =>
-        departmentFilter === "All" ||
-        row.employee.department === departmentFilter,
-    )
-    .filter(
-      (row) =>
-        designationFilter === "All" ||
-        row.employee.designation === designationFilter,
-    )
-    .filter((row) => row.searchText.includes(query));
+        return {
+          employee,
+          attendance,
+          latestLeave,
+          pendingLeave,
+          rowStatus,
+          searchText,
+        };
+      })
+      // Keeps rows whose effective status matches the selected status, or all rows when status is "All".
+      .filter((row) => statusFilter === "All" || row.rowStatus === statusFilter)
+      .filter(
+        // Returns true only when the row matches the chosen department or no department filter is active.
+        (row) =>
+          departmentFilter === "All" ||
+          row.employee.department === departmentFilter,
+      )
+      .filter(
+        // Returns true only when the row matches the chosen designation or no designation filter is active.
+        (row) =>
+          designationFilter === "All" ||
+          row.employee.designation === designationFilter,
+      )
+      // Keeps rows whose searchable text contains the typed query; outputs the final filtered row array.
+      .filter((row) => row.searchText.includes(query))
+  );
 };
 
+// Counts Present, Applied, Leave, Absent, and Not Marked rows and returns those totals as a summary object.
 const getSummary = (rows) => ({
+  // Counts rows with Present status; outputs a number.
   present: rows.filter((row) => row.rowStatus === "Present").length,
+  // Counts rows with a pending leave request; outputs a number.
   applied: rows.filter((row) => row.pendingLeave !== null).length,
+  // Counts rows with Leave status; outputs a number.
   leave: rows.filter((row) => row.rowStatus === "Leave").length,
+  // Counts rows with Absent status; outputs a number.
   absent: rows.filter((row) => row.rowStatus === "Absent").length,
+  // Counts rows whose attendance has not been marked; outputs a number.
   notMarked: rows.filter((row) => row.rowStatus === "Not Marked").length,
 });
 
+// Renders the attendance page and manages filtering, employee attendance, leave requests, review actions, and toast messages; outputs JSX.
 const AttendancePage = ({ userRole = "admin" }) => {
   const { user } = useAuth();
   const canApplyLeave = userRole === "employee";
@@ -126,6 +148,7 @@ const AttendancePage = ({ userRole = "admin" }) => {
   const leaveRequestCounter = useRef(1000);
   const todayDate = getTodayDate();
 
+  // Fetches attendance records from the backend, updates employees or shows an error toast, and resolves without a meaningful return value.
   const fetchAttendanceList = async (silent = false) => {
     if (!user?.token) return;
     try {
@@ -165,20 +188,22 @@ const AttendancePage = ({ userRole = "admin" }) => {
     }
   };
 
+  // Loads attendance when dependencies change, refreshes every five seconds and on window focus, then returns cleanup logic.
   useEffect(() => {
     if (user?.token) {
       fetchAttendanceList();
-
+      // Refreshes attendance quietly; outputs no value used by the interval.
       const interval = setInterval(() => {
         fetchAttendanceList(true);
       }, 5000);
-
+      // Refreshes attendance quietly when the browser window regains focus; outputs undefined.
       const handleFocus = () => {
         fetchAttendanceList(true);
       };
       window.addEventListener("focus", handleFocus);
 
       return () => {
+        // Stops the polling interval and removes the focus listener; outputs undefined during cleanup.
         clearInterval(interval);
         window.removeEventListener("focus", handleFocus);
       };
@@ -191,19 +216,20 @@ const AttendancePage = ({ userRole = "admin" }) => {
     designationFilter,
   ]);
 
+  // Finds the employee selected for leave review; outputs the employee object or undefined, with null used when no review is open.
   const reviewEmployee = reviewContext
     ? employees.find((employee) => employee.id === reviewContext.employeeId)
     : null;
-
+  // Checks each request ID and returns the matching leave request, or undefined when none matches.
   const reviewRequest = reviewEmployee?.leaveRequests?.find(
     (request) => request.id === reviewContext?.requestId,
   );
-
+  // Memoizes the unique department options; outputs an alphabetically sorted array when employees change.
   const departmentOptions = useMemo(
     () => getUniqueSortedValues(employees, "department"),
     [employees],
   );
-
+  // Memoizes designations for the selected department (or all departments); outputs a sorted options array.
   const designationOptions = useMemo(
     () =>
       getUniqueSortedValues(
@@ -216,19 +242,19 @@ const AttendancePage = ({ userRole = "admin" }) => {
       ),
     [departmentFilter, employees],
   );
-
+  // Cancels all active toast timers to prevent old timers from changing a newer toast; outputs undefined.
   const clearToastTimers = () => {
     window.clearTimeout(toastTimer.current);
     window.clearTimeout(toastFrame.current);
     window.clearTimeout(toastExitTimer.current);
   };
-
+  // Closes the toast, cancels current timers, and schedules toast removal; outputs undefined.
   const closeToast = () => {
     clearToastTimers();
     setToastOpen(false);
     toastExitTimer.current = window.setTimeout(() => setToast(null), 220);
   };
-
+  // Sets toast content and animation state, then schedules its display and automatic closing; outputs undefined.
   const showToast = ({ title, message, tone = "success" }) => {
     clearToastTimers();
     setToast({ title, message, tone });
@@ -242,7 +268,7 @@ const AttendancePage = ({ userRole = "admin" }) => {
 
     toastTimer.current = window.setTimeout(closeToast, 3600);
   };
-
+  // Registers unmount cleanup so every active toast timer is canceled when the page is removed.
   useEffect(() => {
     return () => {
       window.clearTimeout(toastTimer.current);
@@ -251,6 +277,7 @@ const AttendancePage = ({ userRole = "admin" }) => {
     };
   }, []);
 
+  // Memoizes the attendance table rows; outputs rows rebuilt only when attendance or filter inputs change.
   const rows = useMemo(
     () =>
       buildAttendanceRows({
@@ -273,8 +300,10 @@ const AttendancePage = ({ userRole = "admin" }) => {
     ],
   );
 
+  // Memoizes attendance counts from the filtered rows; outputs a summary object.
   const summary = useMemo(() => getSummary(rows), [rows]);
 
+  // Applies an updater to the matching employee in the main list and any open employee-related state; outputs undefined.
   const updateEmployee = (employeeId, updater) => {
     setEmployees((currentEmployees) =>
       currentEmployees.map((employee) =>
@@ -294,7 +323,7 @@ const AttendancePage = ({ userRole = "admin" }) => {
         : currentEmployee,
     );
   };
-
+  // Rejects future attendance dates with a warning and otherwise updates the selected date; outputs undefined.
   const handleDateChange = (date) => {
     if (isFutureDate(date, todayDate)) {
       setAttendanceDate(todayDate);
@@ -309,6 +338,7 @@ const AttendancePage = ({ userRole = "admin" }) => {
     setAttendanceDate(date || todayDate);
   };
 
+  // Opens a fresh leave form for an eligible employee, or displays a warning when the role/date is not eligible; outputs undefined.
   const openLeaveForm = (employee) => {
     if (!canApplyLeave) {
       showToast({
@@ -339,6 +369,7 @@ const AttendancePage = ({ userRole = "admin" }) => {
     setLeaveReasonError("");
   };
 
+  // Closes the leave form and resets its dates, reason, and validation errors; outputs undefined.
   const closeLeaveForm = () => {
     setLeaveEmployee(null);
     setLeaveStartDate(todayDate);
@@ -349,6 +380,7 @@ const AttendancePage = ({ userRole = "admin" }) => {
     setLeaveReasonError("");
   };
 
+  // Validates and locally adds a leave request when dates and reason are valid and no attendance/pending leave overlaps; outputs undefined.
   const submitLeave = (event) => {
     event.preventDefault();
 
@@ -447,10 +479,12 @@ const AttendancePage = ({ userRole = "admin" }) => {
     closeLeaveForm();
   };
 
+  // Stores the selected employee and leave-request IDs so the review modal can display that request; outputs undefined.
   const openReview = (employeeId, requestId) => {
     setReviewContext({ employeeId, requestId });
   };
 
+  // Validates and submits an approval/rejection to the backend, shows the result, refreshes records, and resolves without a meaningful return value.
   const decideLeave = async (nextStatus) => {
     if (!reviewEmployee || !reviewRequest) return;
 
@@ -517,6 +551,7 @@ const AttendancePage = ({ userRole = "admin" }) => {
     }
   };
 
+  // REST ARE THE UI PART THAT IS CREATED USING SMALL COMPONENTS
   return (
     <main className={s.mainContainer}>
       <EmployeeToast

@@ -25,6 +25,7 @@ import {
 } from "./payRollUtils";
 import { payrollPageStyles as s } from "../../assets/dummyStyles";
 
+// Renders the payroll page and manages employee selection, payslip generation, records, downloads, and exports; returns the page JSX.
 const PayRollPage = () => {
   const { user } = useAuth();
   const {
@@ -56,6 +57,7 @@ const PayRollPage = () => {
     message: "",
   });
 
+  // Displays a toast notification and automatically hides it after 1.8 seconds; updates toast state and returns nothing.
   const showToast = (type, message) => {
     setToast({ open: true, type, message });
     window.clearTimeout(window.__payrollToastTimer);
@@ -64,6 +66,7 @@ const PayRollPage = () => {
     }, 1800);
   };
 
+  // Loads employee/payroll data, refreshes every 8 seconds and on window focus, and registers cleanup; the effect returns a cleanup function.
   useEffect(() => {
     fetchEmployees();
     fetchPayrolls();
@@ -85,7 +88,9 @@ const PayRollPage = () => {
     };
   }, [fetchEmployees, fetchPayrolls]);
 
+  // Converts cached database employees into the simplified payroll format; returns an array of mapped employee objects.
   const employees = useMemo(() => {
+    // Maps each raw employee into the field names used by the payroll page; returns one normalized object per employee.
     return cachedRawEmployees.map((emp) => ({
       id: emp._id,
       empId: emp.employeeId,
@@ -102,19 +107,23 @@ const PayRollPage = () => {
     }));
   }, [cachedRawEmployees]);
 
+  // Gets unique employee names for the form options; returns an array of names.
   const employeeNames = useMemo(
     () => uniqueValues(employees, "name"),
     [employees],
   );
+  // Gets unique employee designations for the form options; returns an array of roles.
   const employeeDesignations = useMemo(
     () => uniqueValues(employees, "role"),
     [employees],
   );
+  // Gets unique employee departments for the form options; returns an array of departments.
   const employeeDepartments = useMemo(
     () => uniqueValues(employees, "department"),
     [employees],
   );
 
+  // Finds the selected employee by ID or normalized name; returns the matching employee object or null.
   const currentEmployee = useMemo(() => {
     const byId = employees.find((emp) => String(emp.id) === selectedEmployeeId);
     if (byId) return byId;
@@ -127,6 +136,7 @@ const PayRollPage = () => {
     return null;
   }, [selectedEmployeeId, nameInput, employees]);
 
+  // Syncs the selected employee details into the form and resets extra pay fields when the selection changes; returns nothing.
   useEffect(() => {
     if (!currentEmployee) {
       prevSelectedEmployeeIdRef.current = "";
@@ -147,8 +157,10 @@ const PayRollPage = () => {
     }
   }, [currentEmployee]);
 
+  // Formats the current payroll date for display; returns a human-readable date label.
   const currentDateLabel = useMemo(() => dateValueToLabel(payDate), [payDate]);
 
+  // Calculates base salary plus bonus and overtime minus deductions; returns the numeric net salary.
   const netSalary = useMemo(
     () =>
       Number(baseSalary || 0) +
@@ -158,11 +170,13 @@ const PayRollPage = () => {
     [baseSalary, bonus, overtime, deduction],
   );
 
+  // Adds the net salary from all payroll records; returns the total amount paid.
   const totalSalaryPaid = useMemo(
     () => records.reduce((sum, record) => sum + (record.netSalary || 0), 0),
     [records],
   );
 
+  // Filters payroll records by the chosen date and search query; returns the matching records array.
   const filteredRecords = useMemo(() => {
     const q = normalize(search);
     return records.filter((row) => {
@@ -179,6 +193,7 @@ const PayRollPage = () => {
     });
   }, [records, search, dateFilter]);
 
+  // Builds lookup keys for employee-and-period combinations already used; returns an object for duplicate checks.
   const generatedKeys = useMemo(() => {
     const keys = {};
     records.forEach((rec) => {
@@ -188,6 +203,7 @@ const PayRollPage = () => {
     return keys;
   }, [records]);
 
+  // Validates the employee and salary period, saves a payslip through the API, and updates state; returns the created record or null.
   const createRecord = async () => {
     if (!currentEmployee) {
       showToast("error", "Please write or select a valid employee name first.");
@@ -279,6 +295,7 @@ const PayRollPage = () => {
     }
   };
 
+  // Builds the payslip HTML and triggers a file download; shows a toast and returns nothing.
   const savePayslipFile = (payslip, employee) => {
     const html = buildPayslipHtml(payslip, employee);
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
@@ -295,6 +312,7 @@ const PayRollPage = () => {
     showToast("success", "Payslip downloaded.");
   };
 
+  // Combines current form fields into employee and payslip data; returns the data object or null if no employee is selected.
   const getCurrentPayslipData = () => {
     if (!currentEmployee) {
       showToast("error", "Please write or select an employee name first.");
@@ -325,13 +343,13 @@ const PayRollPage = () => {
       },
     };
   };
-
+  // Retrieves current payslip data and downloads its file; returns nothing.
   const downloadPayslip = () => {
     const currentPayslip = getCurrentPayslipData();
     if (!currentPayslip) return;
     savePayslipFile(currentPayslip.payslip, currentPayslip.employee);
   };
-
+  // Prepares employee details for a saved payroll record and downloads its payslip; returns nothing.
   const downloadRecordPayslip = (record) => {
     const employee = employees.find((emp) => emp.empId === record.empId) || {
       empId: record.empId,
@@ -355,7 +373,7 @@ const PayRollPage = () => {
       employee,
     );
   };
-
+  // Converts filtered payroll records into a CSV file and triggers its download; returns nothing.
   const exportPayrollToExcel = () => {
     const headers = [
       "Payroll ID",
@@ -403,12 +421,13 @@ const PayRollPage = () => {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     showToast("success", "Payroll records exported to CSV file.");
   };
-
+  // Creates a callback that updates a form field and clears the selected employee ID; returns that callback.
   const clearEmployeeSelection = (setter) => (value) => {
     setter(value);
     setSelectedEmployeeId("");
   };
 
+  // REST ARE THE UI PART THAT IS CREATED USING SMALL COMPONENTS
   return (
     <div className={s.root}>
       <PayRollToast toast={toast} />
